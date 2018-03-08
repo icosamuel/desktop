@@ -46,7 +46,8 @@ import {
   Toolbar,
   ToolbarDropdown,
   DropdownState,
-  PushPullButton,
+  PullButton,
+  PushButton,
   BranchDropdown,
   RevertProgress,
 } from './toolbar'
@@ -1411,7 +1412,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private renderPushPullToolbarButton() {
+  private renderPullToolbarButton() {
     const selection = this.state.selectedState
     if (!selection || selection.type !== SelectionType.Repository) {
       return null
@@ -1429,7 +1430,38 @@ export class App extends React.Component<IAppProps, IAppState> {
     const tipState = state.branchesState.tip.kind
 
     return (
-      <PushPullButton
+      <PullButton
+        dispatcher={this.props.dispatcher}
+        repository={selection.repository}
+        aheadBehind={state.aheadBehind}
+        remoteName={remoteName}
+        lastFetched={state.lastFetched}
+        networkActionInProgress={state.isPushPullFetchInProgress}
+        progress={progress}
+        tipState={tipState}
+      />
+    )
+  }
+
+  private renderPushToolbarButton() {
+    const selection = this.state.selectedState
+    if (!selection || selection.type !== SelectionType.Repository) {
+      return null
+    }
+
+    const state = selection.state
+    const revertProgress = state.revertProgress
+    if (revertProgress) {
+      return <RevertProgress progress={revertProgress} />
+    }
+
+    const remoteName = state.remote ? state.remote.name : null
+    const progress = state.pushPullFetchProgress
+
+    const tipState = state.branchesState.tip.kind
+
+    return (
+      <PushButton
         dispatcher={this.props.dispatcher}
         repository={selection.repository}
         aheadBehind={state.aheadBehind}
@@ -1552,7 +1584,8 @@ export class App extends React.Component<IAppProps, IAppState> {
           {this.renderRepositoryToolbarButton()}
         </div>
         {this.renderBranchToolbarButton()}
-        {this.renderPushPullToolbarButton()}
+        {this.renderPullToolbarButton()}
+        {this.renderPushToolbarButton()}
       </Toolbar>
     )
   }

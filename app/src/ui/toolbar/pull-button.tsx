@@ -8,7 +8,7 @@ import { TipState } from '../../models/tip'
 import { RelativeTime } from '../relative-time'
 import { FetchType } from '../../lib/stores/index'
 
-interface IPushPullButtonProps {
+interface IPullButtonProps {
   /**
    * The ahead/behind count for the current branch. If null, it indicates the
    * branch doesn't have an upstream.
@@ -45,7 +45,7 @@ interface IPushPullButtonProps {
  * A button which pushes, pulls, or updates depending on the state of the
  * repository.
  */
-export class PushPullButton extends React.Component<IPushPullButtonProps, {}> {
+export class PullButton extends React.Component<IPullButtonProps, {}> {
   public render() {
     const progress = this.props.progress
 
@@ -70,7 +70,9 @@ export class PushPullButton extends React.Component<IPushPullButtonProps, {}> {
       ? this.props.tipState === TipState.Valid
       : true
 
-    const disabled = !validState || networkActive
+    const notPublishedYet = !this.props.aheadBehind || !this.props.remoteName
+
+    const disabled = !validState || networkActive || notPublishedYet
 
     return (
       <ToolbarButton
@@ -95,21 +97,12 @@ export class PushPullButton extends React.Component<IPushPullButtonProps, {}> {
       return null
     }
 
-    const { ahead, behind } = this.props.aheadBehind
-    if (ahead === 0 && behind === 0) {
+    const { behind } = this.props.aheadBehind
+    if (behind === 0) {
       return null
     }
 
     const content: JSX.Element[] = []
-    if (ahead > 0) {
-      content.push(
-        <span key="ahead">
-          {ahead}
-          <Octicon symbol={OcticonSymbol.arrowSmallUp} />
-        </span>
-      )
-    }
-
     if (behind > 0) {
       content.push(
         <span key="behind">
@@ -123,20 +116,14 @@ export class PushPullButton extends React.Component<IPushPullButtonProps, {}> {
   }
 
   private getTitle(): string {
-    if (!this.props.remoteName) {
-      return 'Publish repository'
-    }
-    if (!this.props.aheadBehind) {
-      return 'Publish branch'
+    if (!this.props.remoteName || !this.props.aheadBehind) {
+      return 'No remote'
     }
 
-    const { ahead, behind } = this.props.aheadBehind
+    const { behind } = this.props.aheadBehind
     const actionName = (function() {
       if (behind > 0) {
         return 'Pull'
-      }
-      if (ahead > 0) {
-        return 'Push'
       }
       return 'Fetch'
     })()
@@ -149,44 +136,23 @@ export class PushPullButton extends React.Component<IPushPullButtonProps, {}> {
       return OcticonSymbol.sync
     }
 
-    if (!this.props.remoteName) {
-      return OcticonSymbol.cloudUpload
-    }
-    if (!this.props.aheadBehind) {
-      return OcticonSymbol.cloudUpload
+    if (!this.props.remoteName || !this.props.aheadBehind) {
+      return OcticonSymbol.stop
     }
 
-    const { ahead, behind } = this.props.aheadBehind
+    const { behind } = this.props.aheadBehind
     if (this.props.networkActionInProgress) {
       return OcticonSymbol.sync
     }
     if (behind > 0) {
       return OcticonSymbol.arrowDown
     }
-    if (ahead > 0) {
-      return OcticonSymbol.arrowUp
-    }
     return OcticonSymbol.sync
   }
 
   private getDescription(tipState: TipState): JSX.Element | string {
-    if (!this.props.remoteName) {
-      return 'Publish this repository to GitHub'
-    }
-
-    if (tipState === TipState.Detached) {
-      return 'Cannot publish detached HEAD'
-    }
-
-    if (tipState === TipState.Unborn) {
-      return 'Cannot publish unborn HEAD'
-    }
-
-    if (!this.props.aheadBehind) {
-      const isGitHub = !!this.props.repository.gitHubRepository
-      return isGitHub
-        ? 'Publish this branch to GitHub'
-        : 'Publish this branch to the remote'
+    if (!this.props.remoteName || !this.props.aheadBehind) {
+      return 'Need to publish first'
     }
 
     const lastFetched = this.props.lastFetched
@@ -202,23 +168,19 @@ export class PushPullButton extends React.Component<IPushPullButtonProps, {}> {
   }
 
   private performAction = () => {
-    const repository = this.props.repository
-    const dispatcher = this.props.dispatcher
-    const aheadBehind = this.props.aheadBehind
-
-    if (!aheadBehind) {
-      dispatcher.push(repository)
+    if (!this.props.remoteName || !this.props.aheadBehind) {
       return
     }
 
-    const { ahead, behind } = aheadBehind
+    const { behind } = this.props.aheadBehind
 
     if (behind > 0) {
-      dispatcher.pull(repository)
-    } else if (ahead > 0) {
-      dispatcher.push(repository)
+      this.props.dispatcher.pull(this.props.repository)
     } else {
-      dispatcher.fetch(repository, FetchType.UserInitiatedTask)
+      this.props.dispatcher.fetch(
+        this.props.repository,
+        FetchType.UserInitiatedTask
+      )
     }
   }
 }
