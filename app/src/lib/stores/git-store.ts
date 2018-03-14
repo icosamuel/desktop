@@ -275,6 +275,7 @@ export class GitStore extends BaseStore {
     }
 
     this._allBranches = this.mergeRemoteAndLocalBranches(localAndRemoteBranches)
+    this._allBranches = localAndRemoteBranches
 
     this.refreshDefaultBranch()
     this.refreshRecentBranches(recentBranchNames)
