@@ -286,13 +286,16 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.showAbout()
       case 'boomtown':
         return this.boomtown()
-      case 'open-pull-request': {
+      case 'open-pull-request':
         return this.openPullRequest()
-      }
       case 'install-cli':
         return this.props.dispatcher.installCLI()
       case 'open-external-editor':
         return this.openCurrentRepositoryInExternalEditor()
+      case 'init-submodules':
+        return this.initSubmodulesOfCurrentRepository()
+      case 'update-submodules':
+        return this.updateSubmodulesOfCurrentRepository()
     }
 
     return assertNever(name, `Unknown menu event name: ${name}`)
@@ -1226,13 +1229,21 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.onPopupDismissed()
   }
 
+  private initSubmodulesOfCurrentRepository = () => {
+    const repository = this.getRepository()
+
+    if (!repository || repository instanceof CloningRepository) {
+      return
+    }
+    this.initializeSubmodules([repository])
+  }
+
   private initializeSubmodules = (repositories: ReadonlyArray<Repository>) => {
     this.props.dispatcher.initSubmodules(repositories)
     this.onPopupDismissed()
 
     // unreachable code to call some functions just so it compiles
     if (repositories.length < 0) {
-      this.updateSubmodules(repositories)
       this.forceUpdateSubmodules(
         repositories,
         new SubmoduleEntry('asd', 'asd', 'asd', ' ')
@@ -1240,7 +1251,18 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
   }
 
+  private updateSubmodulesOfCurrentRepository = () => {
+    const repository = this.getRepository()
+
+    if (!repository || repository instanceof CloningRepository) {
+      return
+    }
+    this.updateSubmodules([repository])
+  }
+
   private updateSubmodules = (repositories: ReadonlyArray<Repository>) => {
+    // if one of the submodules is in a conflict state, ask user for a forceUpate
+
     this.props.dispatcher.updateSubmodules(repositories)
     this.onPopupDismissed()
   }
