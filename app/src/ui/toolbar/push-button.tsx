@@ -126,7 +126,7 @@ export class PushButton extends React.Component<IPushButtonProps, {}> {
     const { ahead } = this.props.aheadBehind
     const actionName = (function() {
       if (ahead > 0) {
-        return 'Pull'
+        return 'Push'
       }
       return 'Up to date with'
     })()
@@ -173,6 +173,11 @@ export class PushButton extends React.Component<IPushButtonProps, {}> {
       return isGitHub
         ? 'Publish this branch to GitHub'
         : 'Publish this branch to the remote'
+    }
+
+    const { ahead } = this.props.aheadBehind
+    if (ahead > 0) {
+      return 'Local commits ahead'
     }
 
     return 'Nothing to push'

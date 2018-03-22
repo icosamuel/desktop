@@ -1425,7 +1425,14 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
 
     const remoteName = state.remote ? state.remote.name : null
-    const progress = state.pushPullFetchProgress
+    const progress =
+      state.pushPullFetchProgress &&
+      ['pull', 'fetch'].includes(state.pushPullFetchProgress.kind)
+        ? state.pushPullFetchProgress
+        : null
+
+    const isPushPullFetchInProgress =
+      !!progress && state.isPushPullFetchInProgress
 
     const tipState = state.branchesState.tip.kind
 
@@ -1436,7 +1443,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         aheadBehind={state.aheadBehind}
         remoteName={remoteName}
         lastFetched={state.lastFetched}
-        networkActionInProgress={state.isPushPullFetchInProgress}
+        networkActionInProgress={isPushPullFetchInProgress}
         progress={progress}
         tipState={tipState}
       />
@@ -1456,7 +1463,13 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
 
     const remoteName = state.remote ? state.remote.name : null
-    const progress = state.pushPullFetchProgress
+    const progress =
+      state.pushPullFetchProgress && state.pushPullFetchProgress.kind === 'push'
+        ? state.pushPullFetchProgress
+        : null
+
+    const isPushPullFetchInProgress =
+      !!progress && state.isPushPullFetchInProgress
 
     const tipState = state.branchesState.tip.kind
 
@@ -1467,7 +1480,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         aheadBehind={state.aheadBehind}
         remoteName={remoteName}
         lastFetched={state.lastFetched}
-        networkActionInProgress={state.isPushPullFetchInProgress}
+        networkActionInProgress={isPushPullFetchInProgress}
         progress={progress}
         tipState={tipState}
       />
