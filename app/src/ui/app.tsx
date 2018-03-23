@@ -83,7 +83,7 @@ import { CLIInstalled } from './cli-installed'
 import { GenericGitAuthentication } from './generic-git-auth'
 import { ShellError } from './shell'
 import { InitializeLFS, AttributeMismatch } from './lfs'
-import { InitializeSubmodules } from './submodules/initialize-submodules'
+import { ForceUpdateSubmodules } from './submodules/forceupdate-submodules'
 import { UpstreamAlreadyExists } from './upstream-already-exists'
 import { DeletePullRequest } from './delete-branch/delete-pull-request-dialog'
 import { SubmoduleEntry } from '../models/submodule'
@@ -291,10 +291,6 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.props.dispatcher.installCLI()
       case 'open-external-editor':
         return this.openCurrentRepositoryInExternalEditor()
-      case 'init-submodules':
-        return this.initSubmodulesOfCurrentRepository()
-      case 'update-submodules':
-        return this.updateSubmodulesOfCurrentRepository()
     }
 
     return assertNever(name, `Unknown menu event name: ${name}`)
@@ -1181,12 +1177,13 @@ export class App extends React.Component<IAppProps, IAppState> {
             onInitialize={this.initializeLFS}
           />
         )
-      case PopupType.InitializeSubmodules:
+      case PopupType.ForceUpdateSubmodules:
         return (
-          <InitializeSubmodules
-            repositories={popup.repositories}
+          <ForceUpdateSubmodules
+            repository={popup.repository}
+            submodules={popup.submodules}
             onDismissed={this.onPopupDismissed}
-            onInitialize={this.initializeSubmodules}
+            onForceUpdate={this.forceUpdateSubmodules}
           />
         )
       case PopupType.LFSAttributeMismatch:
@@ -1240,49 +1237,11 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.onPopupDismissed()
   }
 
-  private initSubmodulesOfCurrentRepository = () => {
-    const repository = this.getRepository()
-
-    if (!repository || repository instanceof CloningRepository) {
-      return
-    }
-    this.initializeSubmodules([repository])
-  }
-
-  private initializeSubmodules = (repositories: ReadonlyArray<Repository>) => {
-    this.props.dispatcher.initSubmodules(repositories)
-    this.onPopupDismissed()
-
-    // unreachable code to call some functions just so it compiles
-    if (repositories.length < 0) {
-      this.forceUpdateSubmodules(
-        repositories,
-        new SubmoduleEntry('asd', 'asd', 'asd', ' ')
-      )
-    }
-  }
-
-  private updateSubmodulesOfCurrentRepository = () => {
-    const repository = this.getRepository()
-
-    if (!repository || repository instanceof CloningRepository) {
-      return
-    }
-    this.updateSubmodules([repository])
-  }
-
-  private updateSubmodules = (repositories: ReadonlyArray<Repository>) => {
-    // if one of the submodules is in a conflict state, ask user for a forceUpate
-
-    this.props.dispatcher.updateSubmodules(repositories)
-    this.onPopupDismissed()
-  }
-
   private forceUpdateSubmodules = (
-    repositories: ReadonlyArray<Repository>,
-    submodule: SubmoduleEntry
+    repository: Repository,
+    submodules: ReadonlyArray<SubmoduleEntry>
   ) => {
-    this.props.dispatcher.forceUpdateSubmodules(repositories, submodule)
+    this.props.dispatcher.forceUpdateSubmodules(repository, submodules)
     this.onPopupDismissed()
   }
 

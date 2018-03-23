@@ -100,44 +100,30 @@ export async function forceUpdateSubmodule(
 
 export async function updateSubmodules(repository: Repository): Promise<void> {
   await git(
-    ['submodule', 'update', '--recursive'],
+    ['submodule', 'update', '--init', '--recursive'],
     repository.path,
     'updateSubmodules'
-  )
-}
-
-export async function updateSubmodule(
-  repository: Repository,
-  submodule: SubmoduleEntry
-): Promise<void> {
-  await git(
-    ['submodule', 'update', '--recursive', '--', submodule.path],
-    repository.path,
-    'updateSubmodule'
-  )
-}
-
-export async function initSubmodules(repository: Repository): Promise<void> {
-  await git(['submodule', 'init'], repository.path, 'initSubmodules')
-}
-
-export async function initSubmodule(
-  repository: Repository,
-  submodule: SubmoduleEntry
-): Promise<void> {
-  await git(
-    ['submodule', 'init', '--', submodule.path],
-    repository.path,
-    'initSubmodule'
   )
 }
 
 export async function deinitSubmodule(
   repository: Repository,
   submodule: SubmoduleEntry
-): Promise<void> {
+) {
   await git(
     ['submodule', 'deinit', '--', submodule.path],
+    repository.path,
+    'deinitSubmodule'
+  )
+}
+
+export async function deinitSubmodules(
+  repository: Repository,
+  submodules: ReadonlyArray<SubmoduleEntry>
+) {
+  const paths = submodules.map(subm => subm.path)
+  await git(
+    ['submodule', 'deinit', ...paths],
     repository.path,
     'deinitSubmodule'
   )

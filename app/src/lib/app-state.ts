@@ -26,6 +26,7 @@ import { CloneRepositoryTab } from '../models/clone-repository-tab'
 import { BranchesTab } from '../models/branches-tab'
 import { PullRequest } from '../models/pull-request'
 import { IAuthor } from '../models/author'
+import { SubmoduleEntry } from '../models/submodule'
 
 export { ICommitMessage }
 export { IAheadBehind }
@@ -205,7 +206,7 @@ export enum PopupType {
   ExternalEditorFailed,
   OpenShellFailed,
   InitializeLFS,
-  InitializeSubmodules,
+  ForceUpdateSubmodules,
   LFSAttributeMismatch,
   UpstreamAlreadyExists,
   DeletePullRequest,
@@ -271,8 +272,9 @@ export type Popup =
   | { type: PopupType.OpenShellFailed; message: string }
   | { type: PopupType.InitializeLFS; repositories: ReadonlyArray<Repository> }
   | {
-      type: PopupType.InitializeSubmodules
-      repositories: ReadonlyArray<Repository>
+      type: PopupType.ForceUpdateSubmodules
+      repository: Repository
+      submodules: ReadonlyArray<SubmoduleEntry>
     }
   | { type: PopupType.LFSAttributeMismatch }
   | {

@@ -115,9 +115,10 @@ import {
 import {
   updateSubmodules,
   forceUpdateSubmodule,
-  initSubmodules,
   listSubmodules,
+  deinitSubmodules,
 } from '../git/submodule'
+import { getTextFileContents } from '../git/show'
 import { CloneRepositoryTab } from '../../models/clone-repository-tab'
 import { getAccountForRepository } from '../get-account-for-repository'
 import { BranchesTab } from '../../models/branches-tab'
@@ -2821,7 +2822,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
   ): Promise<ReadonlyArray<Repository>> {
     const addedRepositories = new Array<Repository>()
     const lfsRepositories = new Array<Repository>()
-    const repositoriesUsingSubms = new Array<Repository>()
     for (const path of paths) {
       const validatedPath = await validatedRepositoryPath(path)
       if (validatedPath) {
@@ -2844,11 +2844,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
         if (
           submodules &&
           submodules.length &&
-          submodules.filter(subm => {
+          submodules.some(subm => {
             return subm.state === SubmoduleState.NOT_INIT
-          }).length
+          })
         ) {
-          repositoriesUsingSubms.push(refreshedRepo)
+          await this._updateSubmodule(refreshedRepo)
         }
       } else {
         const error = new Error(`${path} isn't a git repository.`)
@@ -2860,13 +2860,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this._showPopup({
         type: PopupType.InitializeLFS,
         repositories: lfsRepositories,
-      })
-    }
-
-    if (repositoriesUsingSubms.length > 0) {
-      this._showPopup({
-        type: PopupType.InitializeSubmodules,
-        repositories: repositoriesUsingSubms,
       })
     }
 
@@ -3051,17 +3044,76 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
-  public async _initSubmodules(
-    repositories: ReadonlyArray<Repository>
-  ): Promise<void> {
-    for (const repo of repositories) {
-      try {
-        // At this point we've asked the user if we should install them, so
-        // force installation.
-        await initSubmodules(repo)
-      } catch (error) {
-        this.emitError(error)
-      }
+  public async _cleanPrecheckoutSubmodules(
+    repository: Repository,
+    branch: Branch | string
+  ) {
+    try {
+      await listSubmodules(repository).then((subms) => {
+        if (
+          !subms ||
+          !subms.length ||
+          subms.every(subm => subm.state === SubmoduleState.NOT_INIT)
+        ) {
+          return
+        }
+
+        const branchName = branch instanceof Branch ? branch.name : branch
+
+        // git show .gitmodules of next branch
+        return getTextFileContents(repository, branchName, '.gitmodules').then(
+          content => {
+            const matches = content.match(/".*"/g)
+            if (!matches || !matches.length) {
+              return
+            }
+            const paths = matches.map(val => val.replace(/"/g, ''))
+
+            // make a diff list of subms to remove
+            const submsToDeinit = subms.filter(
+              subm => !paths.includes(subm.path)
+            )
+            if (!submsToDeinit || !submsToDeinit.length) {
+              return
+            }
+
+            // submodule deinit
+            return deinitSubmodules(repository, submsToDeinit)
+          }
+        )
+      })
+    } catch (error) {
+      this.emitError(error)
+    }
+  }
+
+  public async _updateSubmodule(repository: Repository) {
+    try {
+      await listSubmodules(repository).then(subms => {
+        if (!subms || !subms.length) {
+          return
+        }
+
+        // if any not OK update
+        if (subms.some(subm => subm.state !== SubmoduleState.NO_CHANGE)) {
+          updateSubmodules(repository)
+        }
+
+        // if any merge conflicts popup to force update
+        const conflictedSumbs = subms.filter(
+          subm => subm.state === SubmoduleState.MERGE_CONFLICT
+        )
+        if (conflictedSumbs && conflictedSumbs.length) {
+          // pop-up
+          this._showPopup({
+            type: PopupType.ForceUpdateSubmodules,
+            repository,
+            submodules: conflictedSumbs,
+          })
+        }
+      })
+    } catch (error) {
+      this.emitError(error)
     }
   }
 
@@ -3069,23 +3121,19 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repositories: ReadonlyArray<Repository>
   ): Promise<void> {
     for (const repo of repositories) {
-      try {
-        await updateSubmodules(repo)
-      } catch (error) {
-        this.emitError(error)
-      }
+      this._updateSubmodule(repo)
     }
   }
 
   public async _forceUpdateSubmodules(
-    repositories: ReadonlyArray<Repository>,
-    submodule: SubmoduleEntry
+    repository: Repository,
+    submodules: ReadonlyArray<SubmoduleEntry>
   ): Promise<void> {
-    for (const repo of repositories) {
+    for (const subm of submodules) {
       try {
         // At this point we've asked the user if we should overwrite changes, so
         // force update.
-        await forceUpdateSubmodule(repo, submodule)
+        await forceUpdateSubmodule(repository, subm)
       } catch (error) {
         this.emitError(error)
       }

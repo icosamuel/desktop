@@ -24,7 +24,7 @@ export class SubmoduleEntry {
     describe: string,
     state: string
   ) {
-    if (![' ', '-', '+', 'U'].includes(state)) {
+    if (!Object.values(SubmoduleState).includes(state)) {
       throw new Error(`submodule state "${state}" not recognized`)
     }
     this.state = state

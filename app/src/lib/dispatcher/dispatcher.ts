@@ -291,7 +291,13 @@ export class Dispatcher {
     repository: Repository,
     branch: Branch | string
   ): Promise<Repository> {
-    return this.appStore._checkoutBranch(repository, branch)
+    return this.appStore
+      ._cleanPrecheckoutSubmodules(repository, branch)
+      .then(() => {
+        return this.appStore._checkoutBranch(repository, branch).then(repo => {
+          return this.appStore._updateSubmodule(repository).then(asd => repo)
+        })
+      })
   }
 
   /** Push the current branch. */
@@ -301,7 +307,9 @@ export class Dispatcher {
 
   /** Pull the current branch. */
   public pull(repository: Repository): Promise<void> {
-    return this.appStore._pull(repository)
+    return this.appStore._pull(repository).then(() => {
+      return this.appStore._updateSubmodule(repository)
+    })
   }
 
   /** Fetch a specific refspec for the repository. */
@@ -1044,12 +1052,6 @@ export class Dispatcher {
     return this.appStore._installLFSHooks(repositories)
   }
 
-  public initSubmodules(
-    repositories: ReadonlyArray<Repository>
-  ): Promise<void> {
-    return this.appStore._initSubmodules(repositories)
-  }
-
   public updateSubmodules(
     repositories: ReadonlyArray<Repository>
   ): Promise<void> {
@@ -1057,10 +1059,10 @@ export class Dispatcher {
   }
 
   public forceUpdateSubmodules(
-    repositories: ReadonlyArray<Repository>,
-    submodule: SubmoduleEntry
+    repository: Repository,
+    submodules: ReadonlyArray<SubmoduleEntry>
   ): Promise<void> {
-    return this.appStore._forceUpdateSubmodules(repositories, submodule)
+    return this.appStore._forceUpdateSubmodules(repository, submodules)
   }
 
   /** Change the selected Clone Repository tab. */

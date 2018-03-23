@@ -6,8 +6,8 @@ import { SubmoduleState } from '../../../src/models/submodule'
 import {
   listActiveSubmodules,
   resetSubmodulePaths,
-  initSubmodule,
   deinitSubmodule,
+  updateSubmodules,
   listSubmodules,
 } from '../../../src/lib/git/submodule'
 import { checkoutBranch, getBranches } from '../../../src/lib/git'
@@ -80,7 +80,7 @@ describe('git/submodule', () => {
     })
   })
 
-  describe('initSubmodules', () => {
+  describe('updateSubmodules', () => {
     it('deinit and init a submodule', async () => {
       const testRepoPath = setupFixtureRepository('submodule-basic-setup')
       const repository = new Repository(testRepoPath, -1, null, false)
@@ -94,7 +94,7 @@ describe('git/submodule', () => {
       submodules = await listSubmodules(repository)
       expect(submodules[0].state).to.equal(SubmoduleState.NOT_INIT)
 
-      await initSubmodule(repository, firstModule)
+      await updateSubmodules(repository)
 
       submodules = await listSubmodules(repository)
       expect(submodules[0].state).to.equal(SubmoduleState.NO_CHANGE)
