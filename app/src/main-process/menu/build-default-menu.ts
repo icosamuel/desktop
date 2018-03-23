@@ -223,17 +223,6 @@ export function buildDefaultMenu(
       },
       separator,
       {
-        label: __DARWIN__ ? 'Init Submodules' : '&Init Submodules',
-        id: 'init-submodules',
-        click: emit('init-submodules'),
-      },
-      {
-        label: __DARWIN__ ? 'Update Submodules' : 'Update Sub&modules',
-        id: 'update-submodules',
-        click: emit('update-submodules'),
-      },
-      separator,
-      {
         id: 'view-repository-on-github',
         label: __DARWIN__ ? 'View on GitHub' : '&View on GitHub',
         accelerator: 'CmdOrCtrl+Shift+G',
