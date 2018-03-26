@@ -291,13 +291,7 @@ export class Dispatcher {
     repository: Repository,
     branch: Branch | string
   ): Promise<Repository> {
-    return this.appStore
-      ._cleanPrecheckoutSubmodules(repository, branch)
-      .then(() => {
-        return this.appStore._checkoutBranch(repository, branch).then(repo => {
-          return this.appStore._updateSubmodule(repository).then(asd => repo)
-        })
-      })
+    return this.appStore._checkoutBranch(repository, branch)
   }
 
   /** Push the current branch. */
@@ -307,9 +301,7 @@ export class Dispatcher {
 
   /** Pull the current branch. */
   public pull(repository: Repository): Promise<void> {
-    return this.appStore._pull(repository).then(() => {
-      return this.appStore._updateSubmodule(repository)
-    })
+    return this.appStore._pull(repository)
   }
 
   /** Fetch a specific refspec for the repository. */

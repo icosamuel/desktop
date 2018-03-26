@@ -1692,6 +1692,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return repository
     }
 
+
+    await this._cleanPrecheckoutSubmodules(repository, branch)
+
     await this.withAuthenticatingUser(repository, (repository, account) =>
       gitStore.performFailableOperation(() =>
         checkoutBranch(repository, account, foundBranch, progress => {
@@ -1699,6 +1702,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
         })
       )
     )
+
+    await this._updateSubmodule(repository)
 
     try {
       this.updateCheckoutProgress(repository, {
@@ -2146,6 +2151,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
             await gitStore.reconcileHistory(mergeBase)
           }
 
+          await this._updateSubmodule(repository)
           await this._refreshRepository(repository)
 
           this.updatePushPullFetchProgress(repository, {
@@ -3049,39 +3055,35 @@ export class AppStore extends TypedBaseStore<IAppState> {
     branch: Branch | string
   ) {
     try {
-      await listSubmodules(repository).then((subms) => {
-        if (
-          !subms ||
-          !subms.length ||
-          subms.every(subm => subm.state === SubmoduleState.NOT_INIT)
-        ) {
-          return
-        }
+      const subms = await listSubmodules(repository)
+      if (
+        !subms ||
+        !subms.length ||
+        subms.every(subm => subm.state === SubmoduleState.NOT_INIT)
+      ) {
+        return
+      }
 
-        const branchName = branch instanceof Branch ? branch.name : branch
+      const branchName = branch instanceof Branch ? branch.name : branch
 
-        // git show .gitmodules of next branch
-        return getTextFileContents(repository, branchName, '.gitmodules').then(
-          content => {
-            const matches = content.match(/".*"/g)
-            if (!matches || !matches.length) {
-              return
-            }
-            const paths = matches.map(val => val.replace(/"/g, ''))
+      // git show .gitmodules of next branch
+      const content = await getTextFileContents(repository, branchName, '.gitmodules')
+      const matches = content.match(/".*"/g)
+      if (!matches || !matches.length) {
+        return
+      }
+      const paths = matches.map(val => val.replace(/"/g, ''))
 
-            // make a diff list of subms to remove
-            const submsToDeinit = subms.filter(
-              subm => !paths.includes(subm.path)
-            )
-            if (!submsToDeinit || !submsToDeinit.length) {
-              return
-            }
+      // make a diff list of subms to remove
+      const submsToDeinit = subms.filter(
+        subm => !paths.includes(subm.path)
+      )
+      if (!submsToDeinit || !submsToDeinit.length) {
+        return
+      }
 
-            // submodule deinit
-            return deinitSubmodules(repository, submsToDeinit)
-          }
-        )
-      })
+      // submodule deinit
+      await deinitSubmodules(repository, submsToDeinit)
     } catch (error) {
       this.emitError(error)
     }
@@ -3089,29 +3091,27 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   public async _updateSubmodule(repository: Repository) {
     try {
-      await listSubmodules(repository).then(subms => {
-        if (!subms || !subms.length) {
-          return
-        }
+      const subms = await listSubmodules(repository)
+      if (!subms || !subms.length) {
+        return
+      }
 
-        // if any not OK update
-        if (subms.some(subm => subm.state !== SubmoduleState.NO_CHANGE)) {
-          updateSubmodules(repository)
-        }
+      // if any not OK, update
+      if (subms.some(subm => subm.state !== SubmoduleState.NO_CHANGE)) {
+        await updateSubmodules(repository)
+      }
 
-        // if any merge conflicts popup to force update
-        const conflictedSumbs = subms.filter(
-          subm => subm.state === SubmoduleState.MERGE_CONFLICT
-        )
-        if (conflictedSumbs && conflictedSumbs.length) {
-          // pop-up
-          this._showPopup({
-            type: PopupType.ForceUpdateSubmodules,
-            repository,
-            submodules: conflictedSumbs,
-          })
-        }
-      })
+      // if any merge conflicts popup to force update
+      const conflictedSumbs = subms.filter(
+        subm => subm.state === SubmoduleState.MERGE_CONFLICT
+      )
+      if (conflictedSumbs && conflictedSumbs.length) {
+        await this._showPopup({
+          type: PopupType.ForceUpdateSubmodules,
+          repository,
+          submodules: conflictedSumbs,
+        })
+      }
     } catch (error) {
       this.emitError(error)
     }
@@ -3121,7 +3121,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repositories: ReadonlyArray<Repository>
   ): Promise<void> {
     for (const repo of repositories) {
-      this._updateSubmodule(repo)
+      await this._updateSubmodule(repo)
     }
   }
 
