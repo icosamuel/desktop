@@ -1692,7 +1692,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return repository
     }
 
-
+    this.updateCheckoutProgress(repository, {
+      kind: 'checkout',
+      title: 'Checking out submodule conflicts',
+      targetBranch: foundBranch.name,
+      value: 0,
+    })
     await this._cleanPrecheckoutSubmodules(repository, branch)
 
     await this.withAuthenticatingUser(repository, (repository, account) =>
@@ -3067,7 +3072,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
       const branchName = branch instanceof Branch ? branch.name : branch
 
       // git show .gitmodules of next branch
-      const content = await getTextFileContents(repository, branchName, '.gitmodules')
+      const content = await getTextFileContents(
+        repository,
+        branchName,
+        '.gitmodules'
+      )
       const matches = content.match(/".*"/g)
       if (!matches || !matches.length) {
         return
@@ -3075,9 +3084,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       const paths = matches.map(val => val.replace(/"/g, ''))
 
       // make a diff list of subms to remove
-      const submsToDeinit = subms.filter(
-        subm => !paths.includes(subm.path)
-      )
+      const submsToDeinit = subms.filter(subm => !paths.includes(subm.path))
       if (!submsToDeinit || !submsToDeinit.length) {
         return
       }
