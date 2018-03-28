@@ -1,10 +1,5 @@
 import * as React from 'react'
-import {
-  FileChange,
-  mapStatus,
-  iconForStatus,
-  AppFileStatus,
-} from '../../models/status'
+import { FileChange, mapStatus, iconForStatus } from '../../models/status'
 import { showContextualMenu } from '../main-process-proxy'
 import { IMenuItem } from '../../lib/menu-item'
 import { PathLabel } from '../lib/path-label'
