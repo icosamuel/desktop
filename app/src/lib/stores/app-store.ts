@@ -3337,6 +3337,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  public async _checkoutFileAtSpecificCommit(
+    repository: Repository,
+    filepath: string,
+    commitSha: string
+  ): Promise<void> {
+    this.getGitStore(repository).checkoutFileAtSpecificCommit(repository, filepath, commitSha)
+  }
+
   /**
    * Set whether the user has chosen to hide or show the
    * co-authors field in the commit message component

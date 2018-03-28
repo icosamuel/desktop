@@ -116,6 +116,21 @@ export class History extends React.Component<IHistoryProps, IHistoryState> {
     this.props.dispatcher.setCommitSummaryWidth(width)
   }
 
+  private onRevertFile = () => {
+    const selectedCommitSha = this.props.history.selection.sha
+    const selectedFile = this.props.history.selection.file
+    if (!selectedCommitSha || !selectedFile) {
+      return
+    }
+    const commitShaMinusOne = `${selectedCommitSha}~1`
+
+    this.props.dispatcher.checkoutFileAtSpecificCommit(
+      this.props.repository,
+      selectedFile.path,
+      commitShaMinusOne
+    )
+  }
+
   private renderFileList() {
     const files = this.props.history.changedFiles
     if (files.length === 0) {
@@ -129,6 +144,7 @@ export class History extends React.Component<IHistoryProps, IHistoryState> {
       <FileList
         files={files}
         onSelectedFileChanged={this.onFileSelected}
+        onRevertFile={this.onRevertFile}
         selectedFile={this.props.history.selection.file}
         availableWidth={availableWidth}
       />

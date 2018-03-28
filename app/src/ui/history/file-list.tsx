@@ -1,5 +1,12 @@
 import * as React from 'react'
-import { FileChange, mapStatus, iconForStatus } from '../../models/status'
+import {
+  FileChange,
+  mapStatus,
+  iconForStatus,
+  AppFileStatus,
+} from '../../models/status'
+import { showContextualMenu } from '../main-process-proxy'
+import { IMenuItem } from '../../lib/menu-item'
 import { PathLabel } from '../lib/path-label'
 import { Octicon } from '../octicons'
 import { List } from '../lib/list'
@@ -7,6 +14,7 @@ import { List } from '../lib/list'
 interface IFileListProps {
   readonly files: ReadonlyArray<FileChange>
   readonly selectedFile: FileChange | null
+  readonly onRevertFile: () => void
   readonly onSelectedFileChanged: (file: FileChange) => void
   readonly availableWidth: number
 }
@@ -32,7 +40,7 @@ export class FileList extends React.Component<IFileListProps, {}> {
       statusWidth
 
     return (
-      <div className="file">
+      <div className="file" onContextMenu={this.onContextMenu}>
         <PathLabel
           path={file.path}
           oldPath={file.oldPath}
@@ -47,6 +55,21 @@ export class FileList extends React.Component<IFileListProps, {}> {
         />
       </div>
     )
+  }
+
+  private onContextMenu = (event: React.MouseEvent<any>) => {
+    event.preventDefault()
+
+    const items: IMenuItem[] = [
+      {
+        label: __DARWIN__
+          ? 'Revert This File To Previous Commit'
+          : 'Revert this file to previous commit',
+        action: this.props.onRevertFile,
+      },
+    ]
+
+    showContextualMenu(items)
   }
 
   private rowForFile(file: FileChange | null): number {

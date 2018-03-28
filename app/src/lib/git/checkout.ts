@@ -76,6 +76,19 @@ export async function checkoutBranch(
 }
 
 /** Check out the paths at HEAD. */
+export async function checkoutPathsAtCommit(
+  repository: Repository,
+  paths: ReadonlyArray<string>,
+  commitSha: string
+): Promise<void> {
+  await git(
+    ['checkout', commitSha, '--', ...paths],
+    repository.path,
+    'checkoutPaths'
+  )
+}
+
+/** Check out the paths at HEAD. */
 export async function checkoutPaths(
   repository: Repository,
   paths: ReadonlyArray<string>

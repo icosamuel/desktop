@@ -1111,6 +1111,18 @@ export class Dispatcher {
     return this.appStore._checkoutPullRequest(repository, pullRequest)
   }
 
+  public async checkoutFileAtSpecificCommit(
+    repository: Repository,
+    filepath: string,
+    commitSha: string
+  ): Promise<void> {
+    return this.appStore._checkoutFileAtSpecificCommit(
+      repository,
+      filepath,
+      commitSha
+    )
+  }
+
   /**
    * Set whether the user has chosen to hide or show the
    * co-authors field in the commit message component

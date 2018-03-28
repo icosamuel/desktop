@@ -34,6 +34,7 @@ import {
   IndexStatus,
   getIndexChanges,
   checkoutIndex,
+  checkoutPathsAtCommit,
   checkoutPaths,
   resetPaths,
   revertCommit,
@@ -479,6 +480,14 @@ export class GitStore extends BaseStore {
     // files in the repository will be untracked.
     await unstageAllFiles(repository)
     return true
+  }
+
+  public async checkoutFileAtSpecificCommit(
+    repository: Repository,
+    filepath: string,
+    commitSha: string
+  ): Promise<void> {
+    await checkoutPathsAtCommit(repository, [filepath], commitSha)
   }
 
   /**
